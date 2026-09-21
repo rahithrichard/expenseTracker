@@ -1,0 +1,14 @@
+[
+  {
+    "label": "Dashboard",
+    "path": "/home"
+  },
+  {
+    "label": "page1",
+    "path": "/page1"
+  },
+  {
+    "label": "page2",
+    "path": "/page2"
+  }
+]
