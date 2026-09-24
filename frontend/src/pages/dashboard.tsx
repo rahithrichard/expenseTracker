@@ -5,6 +5,8 @@ import ExpenseForm from '../components/common/from';
 import ConfirmPopup from '../components/common/popup';
 import type { Expense } from '../types/expense';
 import { getExpenses, createExpense, deleteExpense } from '../services/apiService';
+import Table from '../components/tableView';
+import expenseColumns from '../types/expenseColum';
 
 
 function Home() {
@@ -15,6 +17,7 @@ function Home() {
     const [categories, setCategories] = useState<string[]>([]);
     const [showPopup, setShowPopup] = useState(false);
     const [selectedId, setSelectedId] = useState('');
+    const [totalcategories, setTotalCategories] = useState<{ category: string; total: number }[]>([]);
 
     // initialize the expenses state with an empty array to avoid undefined errors
     useEffect(() => {
@@ -32,6 +35,12 @@ function Home() {
         const loadCategories = async () => {    
             await getExpenses('expense-categories').then((categoryData:any) => {
                 setCategories(categoryData);
+            }).catch((error:any) => {
+                setError(error.message);
+            });
+
+            await getExpenses('filtered-categories-total').then((data:any) => {
+                setTotalCategories(data);
             }).catch((error:any) => {
                 setError(error.message);
             });
@@ -99,10 +108,20 @@ const handleDelete = async (id: string) => {
                 }}
             />
             <ExpenseForm categories={categories} template={expenses[0]} initialExpense={editingExpense} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
-            {loading && <p>Loading expenses...</p>}
-            {error && <p className="error">{error}</p>}
-            {!loading && !error && expenses.length === 0 && <p>No expenses found.</p>}
-            {!loading && !error && <List data={expenses} onDelete={handleDelete} onEdit={setEditingExpense} />}
+            <div className="list-container">
+                {loading && <p>Loading expenses...</p>}
+                {error && <p className="error">{error}</p>}
+                {!loading && !error && expenses.length === 0 && <p>No expenses found.</p>}
+                {!loading && !error && <List data={totalcategories} />}
+            </div>
+            <div className="table-container">
+                        <div className="table-panel"> 
+                    <Table data={expenses} columns={expenseColumns} onEdit={setEditingExpense} onDelete={handleDelete}/>
+                </div>
+                <div className="list-wrapper">
+                    
+                </div>   
+            </div>          
         </div>
     </>
     );

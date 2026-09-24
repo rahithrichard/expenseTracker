@@ -2,15 +2,11 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
-const { Client } = require("pg");
-
-const config = {
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 5432),
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "expense_tracker",
-};
+const {
+  databaseConfig,
+  createClient,
+  createAdminClient,
+} = require("./src/config/database");
 
 const migrationsPath = path.join(__dirname, "migrations");
 
@@ -23,27 +19,21 @@ const quoteDatabaseName = (databaseName) => {
 };
 
 async function runMigrations() {
-  const adminConnection = new Client({
-    host: config.host,
-    port: config.port,
-    user: config.user,
-    password: config.password,
-    database: process.env.DB_ADMIN_DATABASE || "postgres",
-  });
+  const adminConnection = createAdminClient();
 
   await adminConnection.connect();
   const databaseResult = await adminConnection.query(
     "SELECT 1 FROM pg_database WHERE datname = $1",
-    [config.database],
+    [databaseConfig.database],
   );
 
   if (databaseResult.rowCount === 0) {
-    await adminConnection.query(`CREATE DATABASE ${quoteDatabaseName(config.database)}`);
+    await adminConnection.query(`CREATE DATABASE ${quoteDatabaseName(databaseConfig.database)}`);
   }
 
   await adminConnection.end();
 
-  const connection = new Client(config);
+  const connection = createClient();
   await connection.connect();
 
   await connection.query(`
