@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { type TableProps } from '../types/tableType';
-import formatValue from '../types/formatValue';
+import { type TableProps } from '../../types/tableType';
+import formatValue from '../../utils/formatValue';
 
 const normalizeDate = (value: unknown) => String(value ?? '').slice(0, 10);
 

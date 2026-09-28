@@ -1,21 +1,23 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Home from '../pages/dashboard';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from '../pages/Dashboard';
+import ProtectedRoute from './protectedRutes';
+import Login from '../pages/login';
+import { SkeletonTheme } from 'react-loading-skeleton';
 
 
 const appRoutes = () => (
+  <SkeletonTheme baseColor="#d5d4d3" highlightColor="#f2f0ef">
   <BrowserRouter>
     <Routes>
       {/* Public route */}
-      <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route path="/home" element={<Home />} />
+      <Route path="/" element={<Login />} />
           {/* Protected routes */}
-      {/* <Route element={<ProtectedRoute />}>
-      <Route path="/home" element={<Home />} /> */}
-      {/* <Route path="/about" element={<page1 />} />
-      <Route path="/contact" element={<page2 />} /> */}
-      {/* </Route> */}
+      <Route element={<ProtectedRoute />}>
+      <Route path="/home" element={<Home />} />
+      </Route>
     </Routes>
   </BrowserRouter>
+  </SkeletonTheme>
 );
 
 export default appRoutes;

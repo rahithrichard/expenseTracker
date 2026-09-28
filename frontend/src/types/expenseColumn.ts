@@ -1,5 +1,5 @@
-import capitalize from './capitalize';
-import formatDate from './dateFormat';
+import capitalize from '../utils/capitalize';
+import formatDate from '../utils/dateFormat';
 import type { Column } from './tableType';
 import type { Expense } from './expense';
 

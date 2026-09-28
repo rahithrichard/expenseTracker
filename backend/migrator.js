@@ -6,7 +6,7 @@ const {
   databaseConfig,
   createClient,
   createAdminClient,
-} = require("./src/config/database");
+} = require("./src/config/db");
 
 const migrationsPath = path.join(__dirname, "migrations");
 

@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
-import NavigationBar from '../components/navbar';
-import List from '../components/list';
-import ExpenseForm from '../components/common/from';
-import ConfirmPopup from '../components/common/popup';
+import NavigationBar from '../components/Navbar';
+import List from '../components/expense/ExpenseList';
+import ExpenseForm from '../components/common/Form';
+import ConfirmPopup from '../components/common/Popup';
 import type { Expense } from '../types/expense';
 import { getExpenses, createExpense, deleteExpense } from '../services/apiService';
-import Table from '../components/tableView';
-import expenseColumns from '../types/expenseColum';
+import Table from '../components/expense/ExpenseTable';
+import SpendByCategory from '../components/expense/SpendByCategory';
+import expenseColumns from '../types/expenseColumn';
+import SkeletonComponent from '../components/common/skeleton';
+import ExpenseTableSkeleton from '../components/expense/ExpenseTableSkeleton';
+import SpendingChartSkeleton from '../components/expense/SpendingChartSkeleton';
 
 
 function Home() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [loading, setLoading] = useState(true);
+    const [tableloading, settableLoading] = useState(true);
+    const [chartloading, setchartLoading] = useState(true);
     const [error, setError] = useState("");
     const [categories, setCategories] = useState<string[]>([]);
     const [showPopup, setShowPopup] = useState(false);
     const [selectedId, setSelectedId] = useState('');
+    const [totalExpenses, setTotalExpenses] = useState<{ category: string; total: number }[]>([]);
     const [totalcategories, setTotalCategories] = useState<{ category: string; total: number }[]>([]);
 
     // initialize the expenses state with an empty array to avoid undefined errors
@@ -25,10 +32,10 @@ function Home() {
          const loadExpenses = async () => {
             await getExpenses('expenses').then((data:any) => {
             setExpenses(data);
-            setTimeout(() => setLoading(false), 2000); // Add a slight delay to show the loading state
+            settableLoading(false);
                 }).catch((error:any) => {
                     setError(error.message);
-                    setLoading(false);
+                    settableLoading(false)
                 });
             };
 // load categories from the backend API and set the state accordingly
@@ -41,8 +48,19 @@ function Home() {
 
             await getExpenses('filtered-categories-total').then((data:any) => {
                 setTotalCategories(data);
+                setchartLoading(false);
             }).catch((error:any) => {
+                setchartLoading(false);
                 setError(error.message);
+            });
+
+            await getExpenses('totals-expenses').then((data:any) => {
+                setTotalExpenses([
+                    { category: 'total', total: Number(data.Total || 0) },
+                    { category: 'budget', total: Number(data.Budget || 0) },
+                    { category: 'remaining', total: Number(data.Remaining || 0) },
+                ]);
+                setLoading(false);
             });
         };
         loadCategories();
@@ -109,17 +127,21 @@ const handleDelete = async (id: string) => {
             />
             <ExpenseForm categories={categories} template={expenses[0]} initialExpense={editingExpense} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
             <div className="list-container">
-                {loading && <p>Loading expenses...</p>}
+                {loading && <SkeletonComponent count={3}/>}
                 {error && <p className="error">{error}</p>}
                 {!loading && !error && expenses.length === 0 && <p>No expenses found.</p>}
-                {!loading && !error && <List data={totalcategories} />}
+                {!loading && !error && <List data={totalExpenses} />}
             </div>
             <div className="table-container">
-                        <div className="table-panel"> 
-                    <Table data={expenses} columns={expenseColumns} onEdit={setEditingExpense} onDelete={handleDelete}/>
+                <div className="table-panel"> 
+                    {tableloading && <ExpenseTableSkeleton /> }
+                    {error && <p className="error">{error}</p>}
+                    {!tableloading && !error &&<Table data={expenses} columns={expenseColumns} onEdit={setEditingExpense} onDelete={handleDelete} />}
                 </div>
                 <div className="list-wrapper">
-                    
+                    {chartloading && <SpendingChartSkeleton/>}
+                    {error && <p className="error">{error}</p>}
+                    {!chartloading && !error &&<SpendByCategory data={totalcategories} />}
                 </div>   
             </div>          
         </div>

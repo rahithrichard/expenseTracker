@@ -1,4 +1,4 @@
-const { checkDatabaseConnection } = require("./src/config/database");
+const { checkDatabaseConnection } = require("./src/config/db");
 
 checkDatabaseConnection()
   .then((connection) => {

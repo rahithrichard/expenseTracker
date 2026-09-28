@@ -29,23 +29,21 @@ const checkDatabaseConnection = async () => {
   }
 };
 
-const selectNow = async (query, values) => {
+const query = async (text, values) => {
   const client = createClient();
 
   try {
     await client.connect();
-    const result = await client.query(query, values);
-    return result;
+    return await client.query(text, values);
   } finally {
     await client.end();
   }
 };
-
 
 module.exports = {
   databaseConfig,
   createClient,
   createAdminClient,
   checkDatabaseConnection,
-  selectNow,
+  query,
 };
