@@ -1,16 +1,19 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const path = require("path");
 const expenseRoutes = require("./routes/expenseRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const loginRoutes = require("./routes/loginRoutes");
 const { checkDatabaseConnection } = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 const distPath = path.join(__dirname, "../../frontend/dist");
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/api/health/database", async (req, res) => {
   const connection = await checkDatabaseConnection();
@@ -19,6 +22,7 @@ app.get("/api/health/database", async (req, res) => {
 
 app.use("/api", expenseRoutes);
 app.use("/api", categoryRoutes);
+app.use("/api", loginRoutes);
 
 app.use(express.static(distPath));
 

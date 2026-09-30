@@ -1,12 +1,10 @@
 const { query } = require("../config/db");
 
-// for dropdown list
 const listCategories = async () => {
   const result = await query("SELECT name FROM categories ORDER BY id");
   return result.rows.map((row) => row.name);
 };
 
-// for dougnut chart 
 const getCategoryTotals = async (category) => {
   const result = await query(`
     SELECT categories.name AS category,

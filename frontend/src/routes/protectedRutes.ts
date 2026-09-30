@@ -1,12 +1,16 @@
 import { createElement } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { getSavedData } from "../services/localstorageSevice";
+import { useAuth } from "../auth/AuthContext";
 
 function ProtectedRoute() {
-  const user = getSavedData();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!user) {
-    return createElement(Navigate, { to: "/login", replace: true });
+  if (isLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return createElement(Navigate, { to: "/", replace: true });
   }
 
   return createElement(Outlet);

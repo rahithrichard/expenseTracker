@@ -1,19 +1,53 @@
 const expenseService = require("../services/expenseService");
+const budgetService = require("../services/budgetService");
+
+const getMonthStart = (month) => {
+  const selectedMonth = typeof month === "string" ? month : new Date().toISOString().slice(0, 7);
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)) {
+    return null;
+  }
+  return `${selectedMonth}-01`;
+};
 
 const getExpenses = async (req, res) => {
-  res.json(await expenseService.listExpenses());
+  const monthStart = getMonthStart(req.query.month);
+  if (!monthStart) return res.status(400).json({ message: "Month must use YYYY-MM format" });
+  res.json(await expenseService.listExpenses(monthStart, req.user.id));
 };
 
 const getTotalExpenses = async (req, res) => {
-  const total = await expenseService.getTotalExpenses();
-  console.log("Total expenses:", total);
-  const budget = 1000; // Example budget value, you can replace it with a dynamic value if needed
-  res.json({ Total: total, Budget: budget, Remaining: budget - total });
+  const monthStart = getMonthStart(req.query.month);
+  if (!monthStart) return res.status(400).json({ message: "Month must use YYYY-MM format" });
+  const total = await expenseService.getTotalExpenses(monthStart, req.user.id);
+  const budget = await budgetService.getBudgetForMonth(monthStart, req.user.id);
+  res.json({ Total: total, Budget: budget.amount, Remaining: budget.amount - total });
+};
+
+const getBudget = async (req, res) => {
+  const monthStart = getMonthStart(req.query.month);
+  if (!monthStart) return res.status(400).json({ message: "Month must use YYYY-MM format" });
+  res.json(await budgetService.getBudgetForMonth(monthStart, req.user.id));
+};
+
+const saveBudget = async (req, res) => {
+  const amount = Number(req.body.amount);
+  if (!Number.isFinite(amount) || amount < 0) {
+    res.status(400).json({ message: "Budget amount must be a non-negative number" });
+    return;
+  }
+
+  res.json(await budgetService.saveBudget({
+    amount,
+    monthStart: req.body.monthStart,
+    userId: req.user.id,
+  }));
 };
 
 const getCategoryTotals = async (req, res) => {
+  const monthStart = getMonthStart(req.query.month);
+  if (!monthStart) return res.status(400).json({ message: "Month must use YYYY-MM format" });
   const category = typeof req.query.category === "string" ? req.query.category : null;
-  const totals = await expenseService.getCategoryTotals(category);
+  const totals = await expenseService.getCategoryTotals(category, monthStart, req.user.id);
   console.log("Category totals:", totals);
   res.json(totals);
 };
@@ -21,6 +55,7 @@ const getCategoryTotals = async (req, res) => {
 const createExpense = async (req, res) => {
   const expense = await expenseService.createExpense({
     id: req.body.id,
+    userId: req.user.id,
     title: req.body.title,
     amount: req.body.amount,
     category: req.body.category,
@@ -31,7 +66,10 @@ const createExpense = async (req, res) => {
 };
 
 const updateExpense = async (req, res) => {
-  const expense = await expenseService.updateExpense(req.body);
+  const expense = await expenseService.updateExpense({
+    ...req.body,
+    userId: req.user.id,
+  });
 
   if (!expense) {
     res.status(404).json({ message: "Expense not found" });
@@ -42,7 +80,7 @@ const updateExpense = async (req, res) => {
 };
 
 const removeExpense = async (req, res) => {
-  const deleted = await expenseService.deleteExpense(req.params.id);
+  const deleted = await expenseService.deleteExpense(req.params.id, req.user.id);
 
   if (!deleted) {
     res.status(404).json({ message: "Expense not found" });
@@ -55,6 +93,8 @@ const removeExpense = async (req, res) => {
 module.exports = {
   getExpenses,
   getTotalExpenses,
+  getBudget,
+  saveBudget,
   getCategoryTotals,
   createExpense,
   updateExpense,

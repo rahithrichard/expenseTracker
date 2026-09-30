@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import NavigationBar from '../components/Navbar';
 import List from '../components/expense/ExpenseList';
 import ExpenseForm from '../components/common/Form';
+import BudgetForm from '../components/common/BudgetForm';
 import ConfirmPopup from '../components/common/Popup';
 import type { Expense } from '../types/expense';
-import { getExpenses, createExpense, deleteExpense } from '../services/apiService';
+import { getExpenses, createExpense, deleteExpense, getBudget, saveBudget, type Budget } from '../services/apiService';
 import Table from '../components/expense/ExpenseTable';
 import SpendByCategory from '../components/expense/SpendByCategory';
 import expenseColumns from '../types/expenseColumn';
-import SkeletonComponent from '../components/common/skeleton';
 import ExpenseTableSkeleton from '../components/expense/ExpenseTableSkeleton';
 import SpendingChartSkeleton from '../components/expense/SpendingChartSkeleton';
+import SpendingByTime from '../components/expense/SpendingByTime';
+import SpendingByTimeSkeleton from '../components/expense/SpendingByTimeSkeleton';
 
 
 function Home() {
@@ -23,52 +25,63 @@ function Home() {
     const [categories, setCategories] = useState<string[]>([]);
     const [showPopup, setShowPopup] = useState(false);
     const [selectedId, setSelectedId] = useState('');
-    const [totalExpenses, setTotalExpenses] = useState<{ category: string; total: number }[]>([]);
+    const [totalExpenses, setTotalExpenses] = useState<{ category: string; total: number }[]>([
+        { category: 'total', total: 0 },
+        { category: 'budget', total: 0 },
+        { category: 'remaining', total: 0 },
+    ]);
     const [totalcategories, setTotalCategories] = useState<{ category: string; total: number }[]>([]);
+    const [activeForm, setActiveForm] = useState<'expense' | 'budget'>('expense');
+    const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
+    const [budget, setBudget] = useState<Budget>({
+        monthStart: `${new Date().toISOString().slice(0, 7)}-01`,
+        amount: 0,
+    });
 
-    // initialize the expenses state with an empty array to avoid undefined errors
-    useEffect(() => {
-        // load expesnses from the backend API and set the state accordingly
-         const loadExpenses = async () => {
-            await getExpenses('expenses').then((data:any) => {
-            setExpenses(data);
-            settableLoading(false);
-                }).catch((error:any) => {
-                    setError(error.message);
-                    settableLoading(false)
-                });
+    const refreshDashboard = useCallback(async () => {
+        try {
+            const [expenseData, categoryData, categoryTotals, expenseTotals, budgetData] = await Promise.all([
+                getExpenses('expenses', selectedMonth),
+                getExpenses('expense-categories'),
+                getExpenses('filtered-categories-total', selectedMonth),
+                getExpenses('totals-expenses', selectedMonth),
+                getBudget(selectedMonth),
+            ]);
+            setError("");
+
+            setExpenses(expenseData);
+            setCategories(categoryData as unknown as string[]);
+            setTotalCategories(categoryTotals as unknown as { category: string; total: number }[]);
+            setBudget(budgetData);
+
+            const totals = expenseTotals as unknown as {
+                Total?: number;
+                Budget?: number;
+                Remaining?: number;
             };
-// load categories from the backend API and set the state accordingly
-        const loadCategories = async () => {    
-            await getExpenses('expense-categories').then((categoryData:any) => {
-                setCategories(categoryData);
-            }).catch((error:any) => {
-                setError(error.message);
-            });
+            setTotalExpenses([
+                { category: 'total', total: Number(totals.Total || 0) },
+                { category: 'budget', total: Number(totals.Budget || 0) },
+                { category: 'remaining', total: Number(totals.Remaining || 0) },
+            ]);
+            setLoading(false);
+            settableLoading(false);
+            setchartLoading(false);
+        } catch (loadError) {
+            setError(loadError instanceof Error ? loadError.message : 'Failed to refresh dashboard');
+            setLoading(false);
+            settableLoading(false);
+            setchartLoading(false);
+        }
+    }, [selectedMonth]);
 
-            await getExpenses('filtered-categories-total').then((data:any) => {
-                setTotalCategories(data);
-                setchartLoading(false);
-            }).catch((error:any) => {
-                setchartLoading(false);
-                setError(error.message);
-            });
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            void refreshDashboard();
+        }, 0);
 
-            await getExpenses('totals-expenses').then((data:any) => {
-                setTotalExpenses([
-                    { category: 'total', total: Number(data.Total || 0) },
-                    { category: 'budget', total: Number(data.Budget || 0) },
-                    { category: 'remaining', total: Number(data.Remaining || 0) },
-                ]);
-                setLoading(false);
-            });
-        };
-        loadCategories();
-        loadExpenses();
-            console.log('Expenses loaded:', expenses);
-    }, 
-    
-    []);
+        return () => window.clearTimeout(timeout);
+    }, [refreshDashboard]);
 
 // handle delete function to remove an expense from the list and backend
 const handleDelete = async (id: string) => {
@@ -78,7 +91,7 @@ const handleDelete = async (id: string) => {
     const confirmDelete = async (id: string) => {
         try {
             await deleteExpense(id);
-            setExpenses((currentExpenses) => currentExpenses.filter((expense) => expense.id !== id));
+            await refreshDashboard();
         } catch (error) {
             console.error('Error deleting expense:', error);
         } finally {
@@ -89,30 +102,129 @@ const handleDelete = async (id: string) => {
 // common create and update function to handle form submission for both creating and updating expenses
     const handleFormSubmit = async (expense: Expense) => {
         console.log('Form submitted:', expense);
-        setExpenses((currentExpenses) => editingExpense
-            ? currentExpenses.map((currentExpense) => currentExpense.id === expense.id ? expense : currentExpense)
-            : [expense, ...currentExpenses]);
-            if (!editingExpense) {
-            await createExpense(expense, 'create-expense').then((data:any) => {
-            console.log('Expense created:', data);
-        }).catch((error:any) => {
-            console.error('Error creating expense:', error);
-        });
-    }else {
-        console.log('Updating expense:', expense);
-        await createExpense(expense, `update-expense`).then((data:any) => {
-            console.log('Expense updated:', data);
-        }).catch((error:any) => {
-            console.error('Error updating expense:', error);
-        });
-    }
-        setEditingExpense(null);
+        try {
+            await createExpense(expense, editingExpense ? 'update-expense' : 'create-expense');
+            await refreshDashboard();
+            setEditingExpense(null);
+        } catch (submitError) {
+            setError(submitError instanceof Error ? submitError.message : 'Failed to save expense');
+            throw submitError;
+        }
     };
+
+    const handleEditExpense = (expense: Expense) => {
+        setActiveForm('expense');
+        setEditingExpense(expense);
+    };
+
+    const handleBudgetSubmit = async (amount: number, monthStart: string) => {
+        try {
+            await saveBudget(amount, monthStart);
+            await refreshDashboard();
+        } catch (submitError) {
+            setError(submitError instanceof Error ? submitError.message : 'Failed to save budget');
+        }
+    };
+
+    const hasExpenseData = expenses.length > 0;
+
+    if (loading) {
+        return (
+            <>
+                <NavigationBar />
+                <div className="container">
+                    <div className="dashboard-controls-row">
+                        <div className="form-switcher" role="group" aria-label="Choose transaction or budget form">
+                            <button className="form-switcher-button active" type="button" disabled>Expense</button>
+                            <button className="form-switcher-button" type="button" disabled>Budget</button>
+                        </div>
+                        <div className="dashboard-month-filter">
+                            <label htmlFor="dashboard-month">Viewing month</label>
+                            <input id="dashboard-month" type="month" value={selectedMonth} readOnly />
+                        </div>
+                    </div>
+
+                    <div className="list-container">
+                        <div className="skeleton-container">
+                            <div className="skeleton-card">
+                                <div className="icon-img">
+                                    <div className="react-loading-skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                                </div>
+                                <div className="content-st">
+                                    <div className="react-loading-skeleton" style={{ width: '65%', height: '12px', marginBottom: '8px' }} />
+                                    <div className="react-loading-skeleton" style={{ width: '50%', height: '18px' }} />
+                                </div>
+                            </div>
+                            <div className="skeleton-card">
+                                <div className="icon-img">
+                                    <div className="react-loading-skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                                </div>
+                                <div className="content-st">
+                                    <div className="react-loading-skeleton" style={{ width: '65%', height: '12px', marginBottom: '8px' }} />
+                                    <div className="react-loading-skeleton" style={{ width: '50%', height: '18px' }} />
+                                </div>
+                            </div>
+                            <div className="skeleton-card">
+                                <div className="icon-img">
+                                    <div className="react-loading-skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                                </div>
+                                <div className="content-st">
+                                    <div className="react-loading-skeleton" style={{ width: '65%', height: '12px', marginBottom: '8px' }} />
+                                    <div className="react-loading-skeleton" style={{ width: '50%', height: '18px' }} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="table-container">
+                        <div className="table-panel">
+                            <ExpenseTableSkeleton />
+                        </div>
+                        <div className="list-wrapper">
+                            <SpendingChartSkeleton />
+                            <SpendingByTimeSkeleton />
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
 
     return (   
     <>
+    {/* navigation */}
         <NavigationBar />
+        
         <div className="container">
+            <div className="dashboard-controls-row">
+                <div className="form-switcher" role="group" aria-label="Choose transaction or budget form">
+                    <button
+                        className={activeForm === 'expense' ? 'form-switcher-button active' : 'form-switcher-button'}
+                        type="button"
+                        onClick={() => setActiveForm('expense')}
+                        aria-pressed={activeForm === 'expense'}
+                    >
+                        Expense
+                    </button>
+                    <button
+                        className={activeForm === 'budget' ? 'form-switcher-button active' : 'form-switcher-button'}
+                        type="button"
+                        onClick={() => setActiveForm('budget')}
+                        aria-pressed={activeForm === 'budget'}
+                    >
+                        Budget
+                    </button>
+                </div>
+                <div className="dashboard-month-filter">
+                    <label htmlFor="dashboard-month">Viewing month</label>
+                    <input
+                        id="dashboard-month"
+                        type="month"
+                        value={selectedMonth}
+                        onChange={(event) => setSelectedMonth(event.target.value)}
+                    />
+                </div>
+            </div>
             <ConfirmPopup
                 isOpen={showPopup}
                 title="Delete Expense"
@@ -125,25 +237,39 @@ const handleDelete = async (id: string) => {
                     setSelectedId("");
                 }}
             />
-            <ExpenseForm categories={categories} template={expenses[0]} initialExpense={editingExpense} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
-            <div className="list-container">
-                {loading && <SkeletonComponent count={3}/>}
-                {error && <p className="error">{error}</p>}
-                {!loading && !error && expenses.length === 0 && <p>No expenses found.</p>}
-                {!loading && !error && <List data={totalExpenses} />}
-            </div>
-            <div className="table-container">
-                <div className="table-panel"> 
-                    {tableloading && <ExpenseTableSkeleton /> }
-                    {error && <p className="error">{error}</p>}
-                    {!tableloading && !error &&<Table data={expenses} columns={expenseColumns} onEdit={setEditingExpense} onDelete={handleDelete} />}
+            {activeForm === 'expense' ? (
+                <ExpenseForm key={editingExpense?.id ?? `new-${expenses[0]?.id ?? 'empty'}`} categories={categories} template={expenses[0]} initialExpense={editingExpense} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
+            ) : (
+                <BudgetForm key={`${budget.monthStart}-${budget.amount}`} budget={budget} onSubmit={handleBudgetSubmit} />
+            )}
+            {!loading && (
+                <div className="list-container">
+                    <List data={totalExpenses} />
                 </div>
-                <div className="list-wrapper">
-                    {chartloading && <SpendingChartSkeleton/>}
-                    {error && <p className="error">{error}</p>}
-                    {!chartloading && !error &&<SpendByCategory data={totalcategories} />}
-                </div>   
-            </div>          
+            )}
+            {!loading && !error && hasExpenseData && (
+                <div className="table-container">
+                    <div className="table-panel"> 
+                        {tableloading && <ExpenseTableSkeleton /> }
+                        {!tableloading && <Table data={expenses} columns={expenseColumns} onEdit={handleEditExpense} onDelete={handleDelete} />}
+                    </div>
+                    <div className="list-wrapper">
+                        {chartloading && <>
+                            <SpendingChartSkeleton />
+                            <SpendingByTimeSkeleton />
+                        </>}
+                        {!chartloading && <>
+                            <SpendByCategory data={totalcategories} />
+                            <SpendingByTime expenses={expenses} />
+                        </>}
+                    </div>   
+                </div>
+            )}
+            {!loading && !error && !hasExpenseData && (
+                <div className="list-container">
+                    <p className="empty-state">No data available for this month.</p>
+                </div>
+            )}
         </div>
     </>
     );

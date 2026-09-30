@@ -1,11 +1,17 @@
-export function handleUpdate(data:any) {
+export function handleUpdate(data: unknown) {
   localStorage.setItem('loginStore', JSON.stringify(data));
 }
 
 export function getSavedData() {
   const savedData = localStorage.getItem('loginStore');
 
-  return savedData ? JSON.parse(savedData) : null;
+  if (!savedData) return null;
+
+  try {
+    return JSON.parse(savedData) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 export function handleLogout() {

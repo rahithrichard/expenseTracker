@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { type TableProps } from '../../types/tableType';
 import formatValue from '../../utils/formatValue';
 
@@ -37,18 +37,11 @@ function Table<T extends { id: string | number }>({
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
-  const pageData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, category, date]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+  const visiblePage = Math.min(currentPage, totalPages);
+  const pageData = filteredData.slice((visiblePage - 1) * rowsPerPage, visiblePage * rowsPerPage);
 
   if (!data || data.length === 0) {
-    return <p>No data found.</p>;
+    // return <p>No data found.</p>;
   }
 
   return (
@@ -66,20 +59,29 @@ function Table<T extends { id: string | number }>({
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search expenses"
           />
         </label>
         <label>
           Category
-          <select value={category} onChange={(event) => setCategory(event.target.value)}>
+          <select value={category} onChange={(event) => {
+            setCategory(event.target.value);
+            setCurrentPage(1);
+          }}>
             <option value="all">All categories</option>
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
         <label>
           Date
-          <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          <input type="date" value={date} onChange={(event) => {
+            setDate(event.target.value);
+            setCurrentPage(1);
+          }} />
         </label>
         <button
           className="table-clear"
@@ -88,6 +90,7 @@ function Table<T extends { id: string | number }>({
             setSearch('');
             setCategory('all');
             setDate('');
+            setCurrentPage(1);
           }}
         >
           Clear filters
@@ -151,11 +154,11 @@ function Table<T extends { id: string | number }>({
       </div>
       {filteredData.length > 0 && (
         <div className="table-pagination">
-          <span>Page {currentPage} of {totalPages}</span>
-          <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>
+          <span>Page {visiblePage} of {totalPages}</span>
+          <button type="button" disabled={visiblePage === 1} onClick={() => setCurrentPage(visiblePage - 1)}>
             Previous
           </button>
-          <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)}>
+          <button type="button" disabled={visiblePage === totalPages} onClick={() => setCurrentPage(visiblePage + 1)}>
             Next
           </button>
         </div>

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../assets/styles/styles.css';
-import { getSavedData, handleUpdate } from '../services/localstorageSevice';
+import { useAuth } from "../auth/AuthContext";
 
 function Login() {
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,14 +12,15 @@ function Login() {
     email: '',
     password: ''
   });
+   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (getSavedData()) {
+    if (!isLoading && isAuthenticated) {
       navigate('/home', { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
-  function handleLogin(event:any) {
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
   const newErrors: { email: string; password: string } = {
@@ -41,11 +43,20 @@ function Login() {
 
     setErrors(newErrors);
     console.log(newErrors);
-    const data = { email, password };
+    const data = { email:email, password:password };
     console.log('Login successful:', data);
     if (!newErrors.email && !newErrors.password) {
-        handleUpdate(data);
-        navigate('/home');
+        
+    try {
+      await login(data,'user-login');
+      navigate('/home');
+    } catch {
+      setError("Login failed. Check your credentials.");
+    } finally {
+      // setLoading(false);
+    }
+        // handleUpdate(data);
+        // navigate('/home');
     }
 }
 
@@ -82,6 +93,7 @@ function Login() {
               onChange={(event) => setPassword(event.target.value)}
             />
             {errors.password && <p className="login-error">{errors.password}</p>}
+            {error&&<p className="login-error">{error}</p>}
           </div>
 
           <button className="login-button" type="submit">
@@ -89,9 +101,9 @@ function Login() {
             <span aria-hidden="true">&rarr;</span>
           </button>
         </form>
+
       </section>
     </main>
-    
   );
 }
 export default Login;

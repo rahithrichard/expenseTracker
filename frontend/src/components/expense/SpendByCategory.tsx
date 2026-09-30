@@ -9,20 +9,20 @@ const chartColors = ['#2684ff', '#12b981', '#ff9f1c', '#8064d8', '#a8b4c8', '#e8
 
 function SpendByCategory({ data }: { data: CategoryTotal[] }) {
   const totalSpend = data.reduce((sum, item) => sum + Number(item.total || 0), 0);
-  let currentAngle = 0;
-  const segments = data.map((item, index) => {
+  const segments = data.reduce<Array<CategoryTotal & { percentage: number; color: string; start: number; end: number }>>((result, item, index) => {
     const percentage = totalSpend > 0 ? (Number(item.total || 0) / totalSpend) * 100 : 0;
-    const start = currentAngle;
-    currentAngle += percentage * 3.6;
+    const start = result[index - 1]?.end ?? 0;
+    const end = start + percentage * 3.6;
 
-    return {
+    result.push({
       ...item,
       percentage,
       color: chartColors[index % chartColors.length],
       start,
-      end: currentAngle,
-    };
-  });
+      end,
+    });
+    return result;
+  }, []);
 
   const gradient = segments.length > 0 && totalSpend > 0
     ? `conic-gradient(${segments.map((item) => `${item.color} ${item.start}deg ${item.end}deg`).join(', ')})`

@@ -1,42 +1,44 @@
 import type { Expense } from "../types/expense";
-const API_URL = import.meta.env.VITE_API_URL || "/api/";
+import { apiRequest } from "../services/apiClient";
 
-// GET method to fetch expenses from the backend
-export const getExpenses = async (url: string): Promise<Expense[]> => {
-  const response = await fetch(API_URL + url);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch expenses");
-  }
-
-  return response.json();
+export const getExpenses = (url: string, month?: string): Promise<Expense[]> => {
+  return apiRequest<Expense[]>(url, {
+    method: "GET",
+    query: month ? { month } : undefined,
+  });
 };
 
 // Post method to create a new expense in the backend
 export const createExpense = async (
   expense: Omit<Expense, "id" | "date">,url: string
 ): Promise<Expense> => {
-  const response = await fetch(API_URL + url, {
+  return apiRequest<Expense>(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(expense),
+    body: expense,
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to create expense");
-  }
-
-  return response.json();
 };
 // Delete method to remove an expense from the backend
-export const deleteExpense = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_URL}delete-expense/${encodeURIComponent(id)}`, {
+export const deleteExpense = (id: string): Promise<void> => {
+  return apiRequest<void>(`delete-expense/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+};
 
-  if (!response.ok) {
-    throw new Error("Failed to delete expense");
-  }
+export interface Budget {
+  monthStart: string;
+  amount: number;
+}
+
+export const getBudget = (month: string): Promise<Budget> => {
+  return apiRequest<Budget>("budget", {
+    method: "GET",
+    query: { month },
+  });
+};
+
+export const saveBudget = (amount: number, monthStart: string): Promise<Budget> => {
+  return apiRequest<Budget>("save-budget", {
+    method: "POST",
+    body: { amount, monthStart },
+  });
 };
