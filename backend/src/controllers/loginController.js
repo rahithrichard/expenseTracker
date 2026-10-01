@@ -16,8 +16,6 @@ const userLogin = async (req, res) => {
     res.status(404).json({ message: "User not found" });
     return;
   }
-const pass = await hashPassword("admin@123");
-console.log("paassword",pass);
   const isValid = await comparePassword(req.body.password, userData.password_hash);
   if (!isValid) {
     return res.status(401).json({ message: "Invalid email or password" });

@@ -1,0 +1,136 @@
+
+
+.time-chart {
+	margin-top: 20px;
+	border: 1px solid #e7e3dc;
+	border-radius: 18px;
+	padding: 22px 24px;
+	background: #fffdf9;
+	box-shadow: 0 8px 24px rgba(63, 48, 32, 0.07);
+	text-align: left;
+}
+
+.time-chart-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.time-chart-heading h2 {
+	margin: 0;
+	color: #27231e;
+	font-size: 24px;
+}
+
+.time-chart-controls {
+	display: flex;
+	gap: 4px;
+	padding: 4px;
+	border-radius: 10px;
+	background: #f2ece4;
+}
+
+.time-chart-button {
+	border: 0;
+	border-radius: 7px;
+	padding: 8px 10px;
+	background: transparent;
+	color: #6f665c;
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.time-chart-button.active {
+	background: #fffdf9;
+	color: var(--bar-color, #2684ff);
+	box-shadow: 0 2px 6px rgba(63, 48, 32, 0.12);
+}
+
+.time-chart-button:focus-visible {
+	outline: 2px solid #9b6b2f;
+	outline-offset: 2px;
+}
+
+.time-chart-bars {
+	display: flex;
+	align-items: end;
+	gap: 12px;
+	min-height: 240px;
+	overflow-x: auto;
+	padding: 4px 2px 0;
+}
+
+.time-chart-bar-group {
+	display: grid;
+	grid-template-rows: 20px 180px 30px;
+	flex: 1 0 52px;
+	gap: 4px;
+	min-width: 52px;
+	text-align: center;
+}
+
+.time-chart-value,
+.time-chart-label {
+	overflow: hidden;
+	color: #8c8479;
+	font-size: 11px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.time-chart-bar-track {
+	display: flex;
+	align-items: end;
+	justify-content: center;
+	border-bottom: 1px solid #d8ccbd;
+	background: repeating-linear-gradient(to top, transparent 0, transparent 44px, #eee7de 45px);
+}
+
+.time-chart-bar {
+	width: min(34px, 70%);
+	min-height: 7px;
+	border-radius: 6px 6px 2px 2px;
+	background: var(--bar-color, #2684ff);
+	transition: height 240ms ease, background-color 240ms ease;
+}
+
+.time-chart-empty {
+	margin: 0;
+	color: #8c8479;
+	font-size: 14px;
+}
+
+.time-chart-skeleton .time-chart-bars {
+	align-items: end;
+}
+
+.time-chart-skeleton-bar {
+	display: block;
+	width: min(34px, 70%);
+	min-height: 7px;
+	margin: 0 auto;
+}
+
+@media (max-width: 680px) {
+
+	.time-chart {
+		padding: 18px;
+	}
+
+	.time-chart-heading {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.time-chart-controls {
+		width: 100%;
+	}
+
+	.time-chart-button {
+		flex: 1;
+	}
+}

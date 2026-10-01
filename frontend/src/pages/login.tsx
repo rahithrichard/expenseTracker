@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../assets/styles/styles.css';
+import { Link } from 'react-router-dom';
 import { useAuth } from "../auth/AuthContext";
 
 function Login() {
@@ -102,6 +102,10 @@ function Login() {
           </button>
         </form>
 
+        <p className="login-link-row">
+          New here?
+          <Link to="/signup" className="login-link">Create an account</Link>
+        </p>
       </section>
     </main>
   );

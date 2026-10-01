@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getCurrentSession, loginUser, logoutUser, type LoginResponse } from "../services/loginApiService";
+import { getCurrentSession, loginUser, logoutUser, signupUser, type LoginResponse, type SignupCredentials } from "../services/loginApiService";
 import type { LoginCredentials } from "../types/logincredentials"
 
 interface AuthContextType {
@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials,url:string) => Promise<void>;
+  signup: (credentials: SignupCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -45,6 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   };
 
+  const signup = async (credentials: SignupCredentials) => {
+    const data = await signupUser(credentials);
+    setUser(data);
+  };
+
   const logout = async () => {
     try {
       await logoutUser();
@@ -62,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: Boolean(user),
         isLoading,
         login,
+        signup,
         logout,
       }}
     >

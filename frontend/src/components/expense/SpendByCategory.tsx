@@ -1,4 +1,3 @@
-import '../../assets/styles/styles.css';
 
 interface CategoryTotal {
   category: string;

@@ -1,5 +1,4 @@
 import capitalize from '../../utils/capitalize';
-import '../../assets/styles/styles.css';
 // import formatDate from '../../utils/dateFormat';
 
 // Hard coded category icons for each expense category

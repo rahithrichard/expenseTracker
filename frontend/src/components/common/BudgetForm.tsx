@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import type { Budget } from '../../services/apiService';
-import '../../assets/styles/styles.css';
 
 interface BudgetFormProps {
   budget: Budget;

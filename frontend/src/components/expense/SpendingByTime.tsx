@@ -1,6 +1,5 @@
 import { useEffect, useReducer } from 'react';
 import type { Expense } from '../../types/expense';
-import '../../assets/styles/styles.css';
 
 type TimePeriod = 'day' | 'month';
 

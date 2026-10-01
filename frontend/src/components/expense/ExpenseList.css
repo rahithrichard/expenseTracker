@@ -1,0 +1,130 @@
+
+
+.expense {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	padding: 20px;
+	border: 1px solid #e7e3dc;
+	border-radius: 18px;
+	background: #fffdf9;
+	box-shadow: 0 8px 24px rgba(63, 48, 32, 0.07);
+	transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.expense:hover {
+	border-color: #d5b98b;
+	box-shadow: 0 14px 30px rgba(63, 48, 32, 0.12);
+	transform: translateY(-3px);
+}
+
+.expense-icon {
+	display: grid;
+	flex: 0 0 56px;
+	place-items: center;
+	width: 56px;
+	height: 56px;
+	border-radius: 16px;
+	font-size: 26px;
+}
+
+.expense-icon--food { background: #fff0d9; }
+.expense-icon--transport { background: #dff3ef; }
+.expense-icon--shopping { background: #f3e5f6; }
+.expense-icon--bills { background: #e8edff; }
+.expense-icon--health { background: #ffe5e7; }
+.expense-icon--other { background: #eee9df; }
+
+.expense-details {
+	min-width: 0;
+	flex: 1;
+}
+
+.expense-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.expense-action {
+	border: 0;
+	border-radius: 8px;
+	padding: 6px 9px;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 700;
+	transition: background 180ms ease, color 180ms ease;
+}
+
+.expense-action--edit {
+	color: #9b6b2f;
+}
+
+.expense-action--edit:hover,
+.expense-action--edit:focus-visible {
+	background: #fff0d9;
+}
+
+.expense-action--delete {
+	color: #b84a4a;
+}
+
+.expense-action--delete:hover,
+.expense-action--delete:focus-visible {
+	background: #ffe5e7;
+}
+
+.expense-action:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.expense-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	color: #8c8479;
+	font-size: 12px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.expense-category {
+	color: #9b6b2f;
+	font-weight: 700;
+}
+
+.expense-details h3 {
+	overflow: hidden;
+	margin: 6px 0 4px;
+	color: #27231e;
+	font-size: 20px;
+	font-weight: 650;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.expense-amount {
+	color: #27231e;
+	font-size: 17px;
+	font-weight: 700;
+}
+
+@media (max-width: 380px) {
+
+	.expense {
+		gap: 12px;
+		padding: 16px;
+	}
+
+	.expense-icon {
+		flex-basis: 48px;
+		width: 48px;
+		height: 48px;
+		font-size: 22px;
+	}
+}

@@ -1,5 +1,4 @@
 import Skeleton from 'react-loading-skeleton';
-import '../../assets/styles/styles.css';
 
 interface SpendingByTimeSkeletonProps {
   count?: number;
