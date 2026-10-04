@@ -36,9 +36,15 @@ const saveBudget = async (req, res) => {
     return;
   }
 
+  const monthStart = req.body.monthStart;
+  if (typeof monthStart !== "string" || !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(monthStart)) {
+    res.status(400).json({ message: "Budget month must be the first day of a valid month" });
+    return;
+  }
+
   res.json(await budgetService.saveBudget({
     amount,
-    monthStart: req.body.monthStart,
+    monthStart,
     userId: req.user.id,
   }));
 };

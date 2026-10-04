@@ -7,6 +7,7 @@ interface ExpenseFormProps {
     categories?: string[];
 	template?: Expense;
 	initialExpense?: Expense | null;
+	availableBalance: number;
 	onSubmit: (expense: Expense) => Promise<void>;
 	onCancel?: () => void;
 }
@@ -37,7 +38,7 @@ const getInitialValues = (source: Expense, isEditing: boolean, fields: string[])
 	}, {});
 };
 
-function ExpenseForm({ template, initialExpense, onSubmit, onCancel, categories }: ExpenseFormProps) {
+function ExpenseForm({ template, initialExpense, availableBalance, onSubmit, onCancel, categories }: ExpenseFormProps) {
     const defaultCategories = ['Food', 'Transport', 'Shopping', 'Health', 'Bills', 'Entertainment', 'Other'];
     const expenseCategories = categories && categories.length > 0 ? categories : defaultCategories;
 	const formTemplate = template ?? defaultExpenseTemplate;
@@ -64,8 +65,9 @@ function ExpenseForm({ template, initialExpense, onSubmit, onCancel, categories 
 
 		const title = String(formValues.title ?? '').trim();
 		const amount = Number(formValues.amount);
+		const spendingLimit = availableBalance + (initialExpense?.amount ?? 0);
 
-		if (!title || !Number.isFinite(amount) || amount < 0 || !formValues.date) return;
+		if (!title || !Number.isFinite(amount) || amount < 0 || amount > spendingLimit || !formValues.date) return;
 
 		submittingRef.current = true;
 		setSubmitting(true);
@@ -130,6 +132,7 @@ function ExpenseForm({ template, initialExpense, onSubmit, onCancel, categories 
 									id={key}
 									type={inputType}
 									min={inputType === 'number' ? '0' : undefined}
+									max={key === 'amount' ? Math.max(0, availableBalance + (initialExpense?.amount ?? 0)) : undefined}
 									step={inputType === 'number' ? '0.01' : undefined}
 									value={value}
 									ref={key === 'title' ? inputRef : undefined}

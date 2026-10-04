@@ -107,7 +107,6 @@ const handleDelete = async (id: string) => {
             await refreshDashboard();
             setEditingExpense(null);
         } catch (submitError) {
-            setError(submitError instanceof Error ? submitError.message : 'Failed to save expense');
             throw submitError;
         }
     };
@@ -121,12 +120,17 @@ const handleDelete = async (id: string) => {
         try {
             await saveBudget(amount, monthStart);
             await refreshDashboard();
+            setEditingExpense(null);
+            setActiveForm('expense');
         } catch (submitError) {
-            setError(submitError instanceof Error ? submitError.message : 'Failed to save budget');
+            throw submitError;
         }
     };
 
     const hasExpenseData = expenses.length > 0;
+    const remainingBalance = totalExpenses.find((item) => item.category === 'remaining')?.total ?? 0;
+    const budgetRequired = budget.amount <= 0 || remainingBalance <= 0;
+    const displayedForm = budgetRequired ? 'budget' : activeForm;
 
     if (loading) {
         return (
@@ -199,18 +203,19 @@ const handleDelete = async (id: string) => {
             <div className="dashboard-controls-row">
                 <div className="form-switcher" role="group" aria-label="Choose transaction or budget form">
                     <button
-                        className={activeForm === 'expense' ? 'form-switcher-button active' : 'form-switcher-button'}
+                        className={displayedForm === 'expense' ? 'form-switcher-button active' : 'form-switcher-button'}
                         type="button"
                         onClick={() => setActiveForm('expense')}
-                        aria-pressed={activeForm === 'expense'}
+                        aria-pressed={displayedForm === 'expense'}
+                        disabled={budgetRequired}
                     >
                         Expense
                     </button>
                     <button
-                        className={activeForm === 'budget' ? 'form-switcher-button active' : 'form-switcher-button'}
+                        className={displayedForm === 'budget' ? 'form-switcher-button active' : 'form-switcher-button'}
                         type="button"
                         onClick={() => setActiveForm('budget')}
-                        aria-pressed={activeForm === 'budget'}
+                        aria-pressed={displayedForm === 'budget'}
                     >
                         Budget
                     </button>
@@ -237,8 +242,8 @@ const handleDelete = async (id: string) => {
                     setSelectedId("");
                 }}
             />
-            {activeForm === 'expense' ? (
-                <ExpenseForm key={editingExpense?.id ?? `new-${expenses[0]?.id ?? 'empty'}`} categories={categories} template={expenses[0]} initialExpense={editingExpense} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
+            {displayedForm === 'expense' ? (
+                <ExpenseForm key={editingExpense?.id ?? `new-${expenses[0]?.id ?? 'empty'}`} categories={categories} template={expenses[0]} initialExpense={editingExpense} availableBalance={remainingBalance} onSubmit={handleFormSubmit} onCancel={() => setEditingExpense(null)} />
             ) : (
                 <BudgetForm key={`${budget.monthStart}-${budget.amount}`} budget={budget} onSubmit={handleBudgetSubmit} />
             )}

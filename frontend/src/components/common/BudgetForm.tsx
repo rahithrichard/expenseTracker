@@ -9,6 +9,7 @@ interface BudgetFormProps {
 function BudgetForm({ budget, onSubmit }: BudgetFormProps) {
   const [amount, setAmount] = useState(String(budget.amount || ''));
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -16,8 +17,11 @@ function BudgetForm({ budget, onSubmit }: BudgetFormProps) {
     if (!Number.isFinite(value) || value < 0) return;
 
     setSaving(true);
+    setSubmitError('');
     try {
       await onSubmit(value, budget.monthStart);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to save budget');
     } finally {
       setSaving(false);
     }
@@ -51,6 +55,7 @@ function BudgetForm({ budget, onSubmit }: BudgetFormProps) {
       <button className="form-submit" type="submit" disabled={saving}>
         {saving ? 'Saving...' : budget.amount ? 'Update budget' : 'Add budget'}
       </button>
+      {submitError && <p className="form-error" role="alert">{submitError}</p>}
     </form>
   );
 }

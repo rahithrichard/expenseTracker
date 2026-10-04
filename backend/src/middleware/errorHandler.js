@@ -6,7 +6,12 @@ const errorHandler = (error, req, res, next) => {
     return;
   }
 
-  res.status(500).json({ message: "Internal server error" });
+  const statusCode = Number.isInteger(error.statusCode) && error.statusCode >= 400 && error.statusCode < 500
+    ? error.statusCode
+    : 500;
+  res.status(statusCode).json({
+    message: statusCode === 500 ? "Internal server error" : error.message,
+  });
 };
 
 module.exports = errorHandler;

@@ -1,4 +1,41 @@
-const { query } = require("../config/db");
+const { query, withTransaction } = require("../config/db");
+
+const requestError = (message) => {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+};
+
+const assertExpenseFitsBudget = async (client, { userId, date, amount, excludeExpenseId }) => {
+  const budgetResult = await client.query(`
+    SELECT amount
+    FROM budgets
+    WHERE user_id = $1
+      AND month_start = DATE_TRUNC('month', $2::date)::date
+  `, [userId, date]);
+
+  if (!budgetResult.rows[0] || Number(budgetResult.rows[0].amount) <= 0) {
+    throw requestError("Add a positive monthly budget before recording expenses");
+  }
+
+  const spentResult = await client.query(`
+    SELECT COALESCE(SUM(amount), 0) AS spent
+    FROM expenses
+    WHERE user_id = $1
+      AND date >= DATE_TRUNC('month', $2::date)::date
+      AND date < (DATE_TRUNC('month', $2::date)::date + INTERVAL '1 month')
+      AND ($3::varchar IS NULL OR id <> $3)
+  `, [userId, date, excludeExpenseId || null]);
+
+  const affordabilityResult = await client.query(
+    "SELECT $1::numeric + $2::numeric <= $3::numeric AS allowed",
+    [spentResult.rows[0].spent, amount, budgetResult.rows[0].amount],
+  );
+
+  if (!affordabilityResult.rows[0].allowed) {
+    throw requestError("Expense exceeds the remaining monthly budget");
+  }
+};
 // for table data
 const listExpenses = async (monthStart, userId) => {
   const result = await query(
@@ -44,24 +81,55 @@ const getCategoryTotals = async (category, monthStart, userId) => {
 
 // CRUD operation 
 const createExpense = async ({ id, userId, title, amount, category, date }) => {
-  const result = await query(`
-    INSERT INTO expenses (id, user_id, title, amount, category, date)
-    VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING id, title, amount, category, date::text AS date
-  `, [id, userId, title, Number(amount), category, date]);
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount < 0) {
+    throw requestError("Expense amount must be a non-negative number");
+  }
 
-  return result.rows[0];
+  return withTransaction(async (client) => {
+    await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [userId]);
+    await assertExpenseFitsBudget(client, { userId, date, amount: numericAmount });
+
+    const result = await client.query(`
+      INSERT INTO expenses (id, user_id, title, amount, category, date)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, title, amount, category, date::text AS date
+    `, [id, userId, title, numericAmount, category, date]);
+
+    return result.rows[0];
+  });
 };
 
 const updateExpense = async ({ id, userId, title, amount, category, date }) => {
-  const result = await query(`
-    UPDATE expenses
-    SET title = $1, amount = $2, category = $3, date = $4, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $5 AND user_id = $6
-    RETURNING id, title, amount, category, date::text AS date
-  `, [title, Number(amount), category, date, id, userId]);
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount < 0) {
+    throw requestError("Expense amount must be a non-negative number");
+  }
 
-  return result.rows[0] || null;
+  return withTransaction(async (client) => {
+    await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [userId]);
+    const existingExpense = await client.query(
+      "SELECT id FROM expenses WHERE id = $1 AND user_id = $2 FOR UPDATE",
+      [id, userId],
+    );
+    if (!existingExpense.rows[0]) return null;
+
+    await assertExpenseFitsBudget(client, {
+      userId,
+      date,
+      amount: numericAmount,
+      excludeExpenseId: id,
+    });
+
+    const result = await client.query(`
+      UPDATE expenses
+      SET title = $1, amount = $2, category = $3, date = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5 AND user_id = $6
+      RETURNING id, title, amount, category, date::text AS date
+    `, [title, numericAmount, category, date, id, userId]);
+
+    return result.rows[0] || null;
+  });
 };
 
 const deleteExpense = async (id, userId) => {
