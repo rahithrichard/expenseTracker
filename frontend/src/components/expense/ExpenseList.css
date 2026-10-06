@@ -28,13 +28,14 @@
 	border-radius: 16px;
 	font-size: 26px;
 }
+.budget{
+	transform: translateY(-5px);
+}
 
-.expense-icon--food { background: #fff0d9; }
-.expense-icon--transport { background: #dff3ef; }
-.expense-icon--shopping { background: #f3e5f6; }
-.expense-icon--bills { background: #e8edff; }
-.expense-icon--health { background: #ffe5e7; }
-.expense-icon--other { background: #eee9df; }
+.expense-icon--total { background: #fff0d9; color: #9b6b2f; }
+.expense-icon--budget { background: #dff3ef; color: #287c73; }
+.expense-icon--remaining { background: #e8edff; color: #5367b6; }
+.expense-icon--other { background: #eee9df; color: #756b5e; }
 
 .expense-details {
 	min-width: 0;

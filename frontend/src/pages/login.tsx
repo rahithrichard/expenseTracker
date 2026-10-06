@@ -2,9 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../auth/AuthContext";
+import { createWelcomeNotification, useNotifications } from '../contexts/NotificationContext';
 
 function Login() {
   const { login, isAuthenticated, isLoading } = useAuth();
+  const { addNotification } = useNotifications();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +51,7 @@ function Login() {
         
     try {
       await login(data,'user-login');
+      addNotification(createWelcomeNotification(email));
       navigate('/home');
     } catch {
       setError("Login failed. Check your credentials.");

@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { createWelcomeNotification, useNotifications } from '../contexts/NotificationContext';
 
 export interface SignupFormData {
 	name: string;
@@ -12,6 +13,7 @@ export interface SignupFormData {
 
 function Signup() {
 	const { signup } = useAuth();
+	const { addNotification } = useNotifications();
 	const navigate = useNavigate();
 	const [error, setError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +47,7 @@ function Signup() {
 		try {
             console.log(data);
 			await signup(data);
+			addNotification(createWelcomeNotification(data.name));
 			navigate('/home', { replace: true });
 		} catch (signupError) {
 			setError(signupError instanceof DOMException && signupError.name === 'TimeoutError'

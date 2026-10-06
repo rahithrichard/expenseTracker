@@ -1,11 +1,12 @@
 import capitalize from '../../utils/capitalize';
 // import formatDate from '../../utils/dateFormat';
 
-// Hard coded category icons for each expense category
+// Meaningful icons for the dashboard summary categories
 const categoryIcons: Record<string, { name: string; symbol: string }> = {
-  total: { name: 'Total', symbol: '🧾' },
-  budget: { name: 'Budget', symbol: '♥' },
-  remaining: { name: 'Remaining', symbol: '✦' },
+  total: { name: 'total', symbol: '💰' },
+  budget: { name: 'budget', symbol: '💳' },
+  remaining: { name: 'remaining', symbol: '↗' },
+  other: { name: 'other', symbol: '◇' },
 };
 
 interface ListProps {
@@ -19,7 +20,7 @@ function List({ data}: ListProps) {
     return (
       <li key={item.category} className="expense">
         <div className={`expense-icon expense-icon--${icon.name}`} aria-hidden="true">
-          {icon.symbol}
+          <span className={icon.name}>{icon.symbol}</span>
         </div>
         <div className="expense-details">
           <h3>{capitalize(item.category)}</h3>

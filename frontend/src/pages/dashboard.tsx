@@ -1,21 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react';
 import NavigationBar from '../components/Navbar';
 import List from '../components/expense/ExpenseList';
 import ExpenseForm from '../components/common/Form';
+import { createBudgetNotification, createLowBalanceNotification, useNotifications } from '../contexts/NotificationContext';
 import BudgetForm from '../components/common/BudgetForm';
 import ConfirmPopup from '../components/common/Popup';
 import type { Expense } from '../types/expense';
 import { getExpenses, createExpense, deleteExpense, getBudget, saveBudget, type Budget } from '../services/apiService';
 import Table from '../components/expense/ExpenseTable';
-import SpendByCategory from '../components/expense/SpendByCategory';
 import expenseColumns from '../types/expenseColumn';
 import ExpenseTableSkeleton from '../components/expense/ExpenseTableSkeleton';
 import SpendingChartSkeleton from '../components/expense/SpendingChartSkeleton';
-import SpendingByTime from '../components/expense/SpendingByTime';
 import SpendingByTimeSkeleton from '../components/expense/SpendingByTimeSkeleton';
+
+const SpendByCategory = lazy(() => import('../components/expense/SpendByCategory'));
+const SpendingByTime = lazy(() => import('../components/expense/SpendingByTime'));
 
 
 function Home() {
+    const { addNotification } = useNotifications();
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [loading, setLoading] = useState(true);
@@ -37,6 +40,7 @@ function Home() {
         monthStart: `${new Date().toISOString().slice(0, 7)}-01`,
         amount: 0,
     });
+    const previousRemainingBalance = useRef<number | null>(null);
 
     const refreshDashboard = useCallback(async () => {
         try {
@@ -59,10 +63,16 @@ function Home() {
                 Budget?: number;
                 Remaining?: number;
             };
+            const nextRemainingBalance = Number(totals.Remaining || 0);
+            const previousBalance = previousRemainingBalance.current;
+            if (nextRemainingBalance < 20 && (previousBalance === null || previousBalance >= 20)) {
+                addNotification(createLowBalanceNotification(nextRemainingBalance));
+            }
+            previousRemainingBalance.current = nextRemainingBalance;
             setTotalExpenses([
                 { category: 'total', total: Number(totals.Total || 0) },
                 { category: 'budget', total: Number(totals.Budget || 0) },
-                { category: 'remaining', total: Number(totals.Remaining || 0) },
+                { category: 'remaining', total: nextRemainingBalance },
             ]);
             setLoading(false);
             settableLoading(false);
@@ -73,7 +83,7 @@ function Home() {
             settableLoading(false);
             setchartLoading(false);
         }
-    }, [selectedMonth]);
+    }, [addNotification, selectedMonth]);
 
     useEffect(() => {
         const timeout = window.setTimeout(() => {
@@ -119,6 +129,7 @@ const handleDelete = async (id: string) => {
     const handleBudgetSubmit = async (amount: number, monthStart: string) => {
         try {
             await saveBudget(amount, monthStart);
+            addNotification(createBudgetNotification(amount));
             await refreshDashboard();
             setEditingExpense(null);
             setActiveForm('expense');
@@ -255,18 +266,28 @@ const handleDelete = async (id: string) => {
             {!loading && !error && hasExpenseData && (
                 <div className="table-container">
                     <div className="table-panel"> 
-                        {tableloading && <ExpenseTableSkeleton /> }
-                        {!tableloading && <Table data={expenses} columns={expenseColumns} onEdit={handleEditExpense} onDelete={handleDelete} />}
+                        {tableloading ? (
+                            <ExpenseTableSkeleton />
+                        ) : (
+                            <Table data={expenses} columns={expenseColumns} onEdit={handleEditExpense} onDelete={handleDelete} />
+                        )}
                     </div>
                     <div className="list-wrapper">
-                        {chartloading && <>
-                            <SpendingChartSkeleton />
-                            <SpendingByTimeSkeleton />
-                        </>}
-                        {!chartloading && <>
-                            <SpendByCategory data={totalcategories} />
-                            <SpendingByTime expenses={expenses} />
-                        </>}
+                        {chartloading ? (
+                            <>
+                                <SpendingChartSkeleton />
+                                <SpendingByTimeSkeleton />
+                            </>
+                        ) : (
+                            <>
+                                <Suspense fallback={<SpendingChartSkeleton />}>
+                                    <SpendByCategory data={totalcategories} />
+                                </Suspense>
+                                <Suspense fallback={<SpendingByTimeSkeleton />}>
+                                    <SpendingByTime expenses={expenses} />
+                                </Suspense>
+                            </>
+                        )}
                     </div>   
                 </div>
             )}

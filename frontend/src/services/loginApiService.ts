@@ -29,8 +29,8 @@ export const signupUser = (credentials: SignupCredentials): Promise<LoginRespons
   });
 };
 
-export const getCurrentSession = (): Promise<LoginResponse> => {
-  return apiRequest<LoginResponse>("auth-session", { method: "GET" });
+export const getCurrentSession = (): Promise<LoginResponse | null> => {
+  return apiRequest<LoginResponse | null>("auth-session", { method: "GET" });
 };
 
 export const logoutUser = (): Promise<void> => {
